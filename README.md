@@ -58,6 +58,20 @@ npm test
 | `DATA_DIR` | no (default `./data`) | Folder for the SQLite database |
 | `DB_PATH` | no | Full path to the database file (overrides `DATA_DIR`) |
 
+## Live deployment notes
+
+The site is published from this repository with the AppJet hosting tools.
+
+* **Admin password** — set `ADMIN_PASSWORD` in the hosting dashboard (Settings → Environment
+  variables). While that variable is set, the password comes from the environment
+  (`password_mode: "environment"`) and the in-panel "change password" form is disabled, so the
+  environment variable is the single source of truth. Edit the variable to change the password.
+* **Data storage** — the SQLite database lives at `data/rewards.db` inside the container. Promos
+  and claims are shared by every visitor while the app is running, but the container filesystem is
+  recreated on each deploy or restart, which resets the database. To keep history across deploys,
+  attach a persistent disk (paid hosting plan) and point `DATA_DIR` at it, or move to an external
+  Postgres database.
+
 `ADMIN_PASSWORD` is only read by the Node server. It is never sent to the browser, and no
 password or hash is present in `public/`.
 
