@@ -431,18 +431,30 @@ h3 {
 }
 
 .meter {
+  display: block;
+  width: 100%;
   margin-top: 10px;
   height: 8px;
+  padding: 0;
   background: #0a1a16;
   border: 1px solid var(--line);
   border-radius: 2px;
   overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
-.meter span {
-  display: block;
-  height: 100%;
-  width: 0;
+.meter::-webkit-progress-bar {
+  background: #0a1a16;
+  border-radius: 2px;
+}
+
+.meter::-webkit-progress-value {
+  background: linear-gradient(90deg, var(--neon-dim), var(--neon));
+  transition: width 0.4s ease;
+}
+
+.meter::-moz-progress-bar {
   background: linear-gradient(90deg, var(--neon-dim), var(--neon));
   transition: width 0.4s ease;
 }

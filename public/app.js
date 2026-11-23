@@ -115,12 +115,13 @@
       : '0 / 0';
 
     var percent = today.max_claims > 0 ? Math.round((today.remaining / today.max_claims) * 100) : 0;
-    statMeter.style.width = percent + '%';
+    statMeter.value = percent;
+    statMeter.setAttribute('value', String(percent));
 
     var next = today.next_switch_at ? new Date(today.next_switch_at) : null;
     statNext.textContent = next
-      ? next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-      : 'Midnight';
+      ? next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: TIMEZONE }) + ' ET'
+      : 'Midnight ET';
     statNextHint.textContent = today.next_switch_at_local || 'midnight ' + today.timezone;
 
     if (!today.has_promo) {

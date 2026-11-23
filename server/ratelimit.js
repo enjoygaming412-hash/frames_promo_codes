@@ -3,12 +3,13 @@
  * It protects the public claim endpoint and the admin login from scripted abuse.
  * Limits are enforced in addition to (never instead of) the database rules.
  */
-export function createRateLimiter({ windowMs, max, message }) {
+export function createRateLimiter({ windowMs, max, message, keyGenerator }) {
   const hits = new Map();
 
   const middleware = (req, res, next) => {
     const now = Date.now();
-    const key = req.clientIp || req.ip || 'unknown';
+    const generated = typeof keyGenerator === 'function' ? keyGenerator(req) : null;
+    const key = generated || req.clientIp || req.ip || 'unknown';
     const entry = hits.get(key);
     const recent = entry ? entry.filter((stamp) => now - stamp < windowMs) : [];
 

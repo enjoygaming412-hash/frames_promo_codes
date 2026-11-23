@@ -80,10 +80,16 @@ export function createApp({ dbPath, adminPassword = process.env.ADMIN_PASSWORD |
 
   app.use(express.json({ limit: '32kb' }));
 
+  // Keyed by connection + Minecraft username so members sharing a network (or a hosting proxy)
+  // cannot lock each other out, while a single username still cannot be scripted.
   const claimLimiter = createRateLimiter({
     windowMs: 10 * 60 * 1000,
-    max: 25,
-    message: 'Too many claim attempts from this connection. Please wait a few minutes and try again.',
+    max: 20,
+    message: 'Too many claim attempts for this username. Please wait a few minutes and try again.',
+    keyGenerator: (req) => {
+      const username = String(req.body?.username ?? '').trim().toLowerCase();
+      return `${req.clientIp || 'unknown'}|${username}`;
+    },
   });
   const loginLimiter = createRateLimiter({
     windowMs: 10 * 60 * 1000,
