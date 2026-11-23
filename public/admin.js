@@ -267,7 +267,7 @@
     $('promo-date').value = promo.date || '';
     $('promo-code').value = promo.code || '';
     $('promo-reward').value = promo.reward || '';
-    $('promo-max').value = promo.max_claims || 50;
+    $('promo-max').value = promo.max_claims == null ? '' : promo.max_claims;
     $('promo-note').value = promo.note || '';
     $('promo-active').checked = promo.active !== false;
     $('promo-form-title').textContent = promo.id ? 'EDIT PROMO · ' + promo.date : 'CREATE DAILY PROMO';
@@ -279,7 +279,7 @@
     state.editingId = null;
     $('promo-form').reset();
     $('promo-id').value = '';
-    $('promo-max').value = 50;
+    $('promo-max').value = '';
     $('promo-active').checked = true;
     $('promo-form-title').textContent = 'CREATE DAILY PROMO';
     if (state.overview) $('promo-date').value = state.overview.today.date;

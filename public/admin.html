@@ -115,7 +115,7 @@
                     <input
                       id="promo-code"
                       type="text"
-                      placeholder="FRAMES-MONDAY"
+                      placeholder="Type the code you want"
                       maxlength="32"
                       autocapitalize="characters"
                       spellcheck="false"
@@ -126,11 +126,19 @@
                 <div class="form-row">
                   <div class="field">
                     <label for="promo-reward">Reward</label>
-                    <input id="promo-reward" type="text" placeholder="e.g. 1x Diamond Kit" maxlength="160" required />
+                    <input id="promo-reward" type="text" placeholder="Type the reward" maxlength="160" required />
                   </div>
                   <div class="field">
                     <label for="promo-max">Max claims</label>
-                    <input id="promo-max" type="number" min="1" max="100000" step="1" value="50" required />
+                    <input
+                      id="promo-max"
+                      type="number"
+                      min="1"
+                      max="100000"
+                      step="1"
+                      placeholder="Max claims"
+                      required
+                    />
                   </div>
                 </div>
                 <div class="field">
