@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { Database } from 'node-sqlite3-wasm';
+import sqlite3 from 'node-sqlite3-wasm';
+
+// node-sqlite3-wasm is published as CommonJS, so pull the class off the default export.
+const { Database } = sqlite3;
 
 import { hashPassword, hashToken, newSessionToken, randomPassword, verifyPassword } from './auth.js';
 import {
