@@ -430,6 +430,23 @@ h3 {
   color: var(--muted);
 }
 
+.panel-head-spaced {
+  margin-top: 20px;
+}
+
+.stack-spaced {
+  margin-top: 22px;
+}
+
+.notfound-wrap {
+  max-width: 560px;
+  text-align: center;
+}
+
+.notfound-title {
+  font-size: clamp(18px, 4vw, 26px);
+}
+
 .meter {
   display: block;
   width: 100%;
