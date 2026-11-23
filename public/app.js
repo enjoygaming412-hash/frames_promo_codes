@@ -120,7 +120,7 @@
 
     var next = today.next_switch_at ? new Date(today.next_switch_at) : null;
     statNext.textContent = next
-      ? next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: TIMEZONE }) + ' ET'
+      ? next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZone: 'America/Toronto' }) + ' ET'
       : 'Midnight ET';
     statNextHint.textContent = today.next_switch_at_local || 'midnight ' + today.timezone;
 
