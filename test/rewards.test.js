@@ -16,7 +16,7 @@ async function startServer(t, { clock, adminPassword = ADMIN_PASSWORD } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fbr-test-'));
   const dbPath = path.join(dir, 'rewards.db');
   const app = createApp({ dbPath, adminPassword, clock, logger: quietLogger });
-  const server = app.listen(0, '127.0.0.1');
+  const server = app.listen(0, '0.0.0.0');
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;
   const store = app.locals.store;
