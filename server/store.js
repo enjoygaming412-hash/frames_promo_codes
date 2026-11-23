@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import Database from 'better-sqlite3';
+
+import { Database } from 'node-sqlite3-wasm';
 
 import { hashPassword, hashToken, newSessionToken, randomPassword, verifyPassword } from './auth.js';
 import {
@@ -26,7 +27,15 @@ function failure(status, code, message, extra = {}) {
 }
 
 function normaliseCode(value) {
-  return String(value ?? '').trim().toUpperCase().replace(/\s+/g, '');
+  return String(value ?? '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '');
+}
+
+function isConstraintError(error) {
+  const text = `${error?.code ?? ''} ${error?.message ?? ''}`.toUpperCase();
+  return text.includes('CONSTRAINT');
 }
 
 function promoView(row, now = new Date()) {
@@ -58,9 +67,10 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
   }
 
   const db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
-  db.pragma('busy_timeout = 5000');
+  // Durability first: every committed write is flushed to the database file, so
+  // claims survive refreshes, restarts and redeploys of the web server.
+  db.exec('PRAGMA foreign_keys = ON;');
+  db.exec('PRAGMA synchronous = FULL;');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings (
@@ -112,15 +122,31 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
 
   const now = () => clock();
 
+  /** Run a function inside an immediate SQLite transaction. */
+  function transaction(fn) {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      const result = fn();
+      db.exec('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        db.exec('ROLLBACK');
+      } catch (rollbackError) {
+        logger.error('Rollback failed:', rollbackError);
+      }
+      throw error;
+    }
+  }
+
   // ---------------------------------------------------------------- settings
-  const getSetting = (key) => db.prepare('SELECT value FROM settings WHERE key = ?').get(key)?.value ?? null;
+  const getSetting = (key) => db.get('SELECT value FROM settings WHERE key = ?', [key])?.value ?? null;
   const setSetting = (key, value) =>
-    db
-      .prepare(
-        `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-      )
-      .run(key, value, now().toISOString());
+    db.run(
+      `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+      [key, value, now().toISOString()],
+    );
 
   // ------------------------------------------------------------ admin login
   const envPasswordHash = adminPassword ? hashPassword(adminPassword) : null;
@@ -163,7 +189,7 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
       return failure(400, 'WEAK_PASSWORD', 'Choose a password with at least 10 characters.');
     }
     setSetting('admin_password_hash', hashPassword(nextPassword));
-    db.prepare('DELETE FROM admin_sessions').run();
+    db.run('DELETE FROM admin_sessions');
     return { ok: true, password_mode: 'database' };
   }
 
@@ -172,26 +198,30 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
     const token = newSessionToken();
     const created = now();
     const expires = new Date(created.getTime() + SESSION_TTL_MS);
-    db.prepare(
-      'INSERT INTO admin_sessions (token_hash, created_at, expires_at, ip, user_agent) VALUES (?, ?, ?, ?, ?)',
-    ).run(hashToken(token), created.toISOString(), expires.toISOString(), ip, String(userAgent).slice(0, 250));
-    db.prepare('DELETE FROM admin_sessions WHERE expires_at < ?').run(created.toISOString());
+    db.run('INSERT INTO admin_sessions (token_hash, created_at, expires_at, ip, user_agent) VALUES (?, ?, ?, ?, ?)', [
+      hashToken(token),
+      created.toISOString(),
+      expires.toISOString(),
+      ip,
+      String(userAgent).slice(0, 250),
+    ]);
+    db.run('DELETE FROM admin_sessions WHERE expires_at < ?', [created.toISOString()]);
     return { token, expiresAt: expires };
   }
 
   function sessionIsValid(token) {
     if (!token) return false;
-    const row = db.prepare('SELECT expires_at FROM admin_sessions WHERE token_hash = ?').get(hashToken(token));
+    const row = db.get('SELECT expires_at FROM admin_sessions WHERE token_hash = ?', [hashToken(token)]);
     if (!row) return false;
     if (new Date(row.expires_at).getTime() <= now().getTime()) {
-      db.prepare('DELETE FROM admin_sessions WHERE token_hash = ?').run(hashToken(token));
+      db.run('DELETE FROM admin_sessions WHERE token_hash = ?', [hashToken(token)]);
       return false;
     }
     return true;
   }
 
   function destroySession(token) {
-    if (token) db.prepare('DELETE FROM admin_sessions WHERE token_hash = ?').run(hashToken(token));
+    if (token) db.run('DELETE FROM admin_sessions WHERE token_hash = ?', [hashToken(token)]);
   }
 
   // ----------------------------------------------------------------- promos
@@ -200,11 +230,11 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
     FROM promos p
   `;
 
-  const getPromoByDate = (date) => db.prepare(`${promoSelect} WHERE p.promo_date = ?`).get(date);
-  const getPromoById = (id) => db.prepare(`${promoSelect} WHERE p.id = ?`).get(id);
+  const getPromoByDate = (date) => db.get(`${promoSelect} WHERE p.promo_date = ?`, [date]) ?? null;
+  const getPromoById = (id) => db.get(`${promoSelect} WHERE p.id = ?`, [Number(id)]) ?? null;
 
   function listPromos() {
-    const rows = db.prepare(`${promoSelect} ORDER BY p.promo_date ASC`).all();
+    const rows = db.all(`${promoSelect} ORDER BY p.promo_date ASC`);
     const current = now();
     return rows.map((row) => promoView(row, current));
   }
@@ -230,7 +260,7 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
     const error = validatePromoInput({ date, code: cleanCode, reward: cleanReward, maxClaims: numericMax });
     if (error) return failure(400, 'INVALID_PROMO', error);
 
-    const existingByDate = db.prepare('SELECT id FROM promos WHERE promo_date = ?').get(date);
+    const existingByDate = db.get('SELECT id FROM promos WHERE promo_date = ?', [date]);
     if (existingByDate && (!id || existingByDate.id !== Number(id))) {
       return failure(409, 'DATE_TAKEN', `A promo already exists for ${date}. Edit that day instead.`);
     }
@@ -239,9 +269,9 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
     const isActive = active ? 1 : 0;
 
     if (id) {
-      const current = db.prepare('SELECT * FROM promos WHERE id = ?').get(Number(id));
+      const current = db.get('SELECT * FROM promos WHERE id = ?', [Number(id)]);
       if (!current) return failure(404, 'NOT_FOUND', 'That promo no longer exists.');
-      const usedClaims = db.prepare('SELECT COUNT(*) AS c FROM claims WHERE promo_id = ?').get(current.id).c;
+      const usedClaims = db.get('SELECT COUNT(*) AS c FROM claims WHERE promo_id = ?', [current.id]).c;
       if (numericMax < usedClaims) {
         return failure(
           400,
@@ -249,26 +279,26 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
           `This day already has ${usedClaims} claims, so the maximum cannot be lower than ${usedClaims}.`,
         );
       }
-      db.prepare(
+      db.run(
         `UPDATE promos SET promo_date = ?, code = ?, reward = ?, max_claims = ?, active = ?, note = ?, updated_at = ?
          WHERE id = ?`,
-      ).run(date, cleanCode, cleanReward, numericMax, isActive, String(note).slice(0, 200), stamp, current.id);
+        [date, cleanCode, cleanReward, numericMax, isActive, String(note).slice(0, 200), stamp, current.id],
+      );
       return { ok: true, promo: promoView(getPromoById(current.id), now()) };
     }
 
-    const inserted = db
-      .prepare(
-        `INSERT INTO promos (promo_date, code, reward, max_claims, active, note, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .run(date, cleanCode, cleanReward, numericMax, isActive, String(note).slice(0, 200), stamp, stamp);
+    const inserted = db.run(
+      `INSERT INTO promos (promo_date, code, reward, max_claims, active, note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, cleanCode, cleanReward, numericMax, isActive, String(note).slice(0, 200), stamp, stamp],
+    );
     return { ok: true, promo: promoView(getPromoById(inserted.lastInsertRowid), now()) };
   }
 
   function deletePromo(id) {
-    const promo = db.prepare('SELECT * FROM promos WHERE id = ?').get(Number(id));
+    const promo = db.get('SELECT * FROM promos WHERE id = ?', [Number(id)]);
     if (!promo) return failure(404, 'NOT_FOUND', 'That promo no longer exists.');
-    const usedClaims = db.prepare('SELECT COUNT(*) AS c FROM claims WHERE promo_id = ?').get(promo.id).c;
+    const usedClaims = db.get('SELECT COUNT(*) AS c FROM claims WHERE promo_id = ?', [promo.id]).c;
     if (usedClaims > 0) {
       return failure(
         409,
@@ -276,15 +306,13 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
         `This promo has ${usedClaims} claim(s) on record and is kept for claim history. Turn it off instead of deleting it.`,
       );
     }
-    db.prepare('DELETE FROM promos WHERE id = ?').run(promo.id);
+    db.run('DELETE FROM promos WHERE id = ?', [promo.id]);
     return { ok: true };
   }
 
   // ----------------------------------------------------------------- claims
   function lastClaimForUser(usernameLower) {
-    return db
-      .prepare('SELECT * FROM claims WHERE username_lower = ? ORDER BY claimed_at DESC LIMIT 1')
-      .get(usernameLower);
+    return db.get('SELECT * FROM claims WHERE username_lower = ? ORDER BY claimed_at DESC LIMIT 1', [usernameLower]);
   }
 
   function cooldownInfo(row, current) {
@@ -324,7 +352,9 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
 
     const usernameLower = rawUser.toLowerCase();
 
-    const runClaim = db.transaction(() => {
+    // Everything below runs inside one transaction, so two people clicking at the
+    // same moment cannot both take the last claim or bypass the cooldown.
+    return transaction(() => {
       const current = now();
       const today = torontoDate(current);
       const promo = getPromoByDate(today);
@@ -344,7 +374,7 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
         );
       }
 
-      const used = db.prepare('SELECT COUNT(*) AS c FROM claims WHERE promo_id = ?').get(promo.id).c;
+      const used = db.get('SELECT COUNT(*) AS c FROM claims WHERE promo_id = ?', [promo.id]).c;
       if (used >= promo.max_claims) {
         return failure(
           409,
@@ -364,12 +394,10 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
       }
 
       try {
-        const inserted = db
-          .prepare(
-            `INSERT INTO claims (promo_id, promo_date, code, reward, username, username_lower, claimed_at, claimed_date, ip)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .run(
+        const inserted = db.run(
+          `INSERT INTO claims (promo_id, promo_date, code, reward, username, username_lower, claimed_at, claimed_date, ip)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
             promo.id,
             promo.promo_date,
             promo.code,
@@ -379,9 +407,10 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
             current.toISOString(),
             today,
             String(ip || '').slice(0, 60),
-          );
+          ],
+        );
 
-        const claim = db.prepare('SELECT * FROM claims WHERE id = ?').get(inserted.lastInsertRowid);
+        const claim = db.get('SELECT * FROM claims WHERE id = ?', [inserted.lastInsertRowid]);
         return {
           ok: true,
           status: 201,
@@ -399,18 +428,12 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
           next_claim_at_local: torontoTimeLabel(new Date(current.getTime() + COOLDOWN_MS)),
         };
       } catch (error) {
-        if (String(error?.code || '').includes('SQLITE_CONSTRAINT')) {
-          return failure(
-            409,
-            'ALREADY_CLAIMED',
-            'This Minecraft username has already claimed today’s promo code.',
-          );
+        if (isConstraintError(error)) {
+          return failure(409, 'ALREADY_CLAIMED', 'This Minecraft username has already claimed today’s promo code.');
         }
         throw error;
       }
     });
-
-    return runClaim.immediate();
   }
 
   function publicStatus(username) {
@@ -435,16 +458,15 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
     }
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
-    const total = db.prepare(`SELECT COUNT(*) AS c FROM claims c ${where}`).get(...params).c;
-    const rows = db
-      .prepare(
-        `SELECT c.*, p.reward AS promo_reward FROM claims c
-         LEFT JOIN promos p ON p.id = c.promo_id
-         ${where}
-         ORDER BY c.claimed_at DESC, c.id DESC
-         LIMIT ? OFFSET ?`,
-      )
-      .all(...params, safeLimit, safeOffset);
+    const total = db.get(`SELECT COUNT(*) AS c FROM claims c ${where}`, params).c;
+    const rows = db.all(
+      `SELECT c.*, p.reward AS promo_reward FROM claims c
+       LEFT JOIN promos p ON p.id = c.promo_id
+       ${where}
+       ORDER BY c.claimed_at DESC, c.id DESC
+       LIMIT ? OFFSET ?`,
+      [...params, safeLimit, safeOffset],
+    );
 
     return {
       total,
@@ -466,15 +488,15 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
   }
 
   function setDelivered(id, delivered) {
-    const claim = db.prepare('SELECT * FROM claims WHERE id = ?').get(Number(id));
+    const claim = db.get('SELECT * FROM claims WHERE id = ?', [Number(id)]);
     if (!claim) return failure(404, 'NOT_FOUND', 'That claim no longer exists.');
     const stamp = now().toISOString();
-    db.prepare('UPDATE claims SET delivered = ?, delivered_at = ? WHERE id = ?').run(
+    db.run('UPDATE claims SET delivered = ?, delivered_at = ? WHERE id = ?', [
       delivered ? 1 : 0,
       delivered ? stamp : null,
       claim.id,
-    );
-    const updated = db.prepare('SELECT * FROM claims WHERE id = ?').get(claim.id);
+    ]);
+    const updated = db.get('SELECT * FROM claims WHERE id = ?', [claim.id]);
     return {
       ok: true,
       claim: {
@@ -487,9 +509,9 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
   }
 
   function deleteClaim(id) {
-    const claim = db.prepare('SELECT * FROM claims WHERE id = ?').get(Number(id));
+    const claim = db.get('SELECT * FROM claims WHERE id = ?', [Number(id)]);
     if (!claim) return failure(404, 'NOT_FOUND', 'That claim no longer exists.');
-    db.prepare('DELETE FROM claims WHERE id = ?').run(claim.id);
+    db.run('DELETE FROM claims WHERE id = ?', [claim.id]);
     return { ok: true };
   }
 
@@ -521,14 +543,12 @@ export function createStore({ dbPath, adminPassword = null, clock = () => new Da
     const current = now();
     const today = todayPromo(current);
     const todayRow = getPromoByDate(today.date);
-    const totals = db
-      .prepare(
-        `SELECT COUNT(*) AS total,
-                SUM(CASE WHEN delivered = 1 THEN 1 ELSE 0 END) AS delivered,
-                COUNT(DISTINCT username_lower) AS usernames
-         FROM claims`,
-      )
-      .get();
+    const totals = db.get(
+      `SELECT COUNT(*) AS total,
+              SUM(CASE WHEN delivered = 1 THEN 1 ELSE 0 END) AS delivered,
+              COUNT(DISTINCT username_lower) AS usernames
+       FROM claims`,
+    );
     const upcoming = [];
     for (let i = 1; i <= 7; i += 1) {
       const date = addDays(today.date, i);

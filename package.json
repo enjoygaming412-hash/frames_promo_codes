@@ -14,7 +14,7 @@
     "dev": "node server/index.js"
   },
   "dependencies": {
-    "better-sqlite3": "^13.2.0",
+    "node-sqlite3-wasm": "^0.8.0",
     "express": "^5.1.0"
   }
 }
