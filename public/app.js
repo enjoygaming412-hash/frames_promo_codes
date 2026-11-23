@@ -5,7 +5,7 @@
   var form = document.getElementById('claim-form');
   var codeInput = document.getElementById('code');
   var userInput = document.getElementById('username');
-  var confirmInput = document.getElementById('confirm');
+  var agreeInput = document.getElementById('discord-confirm');
   var submitButton = document.getElementById('claim-button');
   var resultBox = document.getElementById('claim-result');
   var statReward = document.getElementById('stat-reward');
@@ -157,7 +157,6 @@
     var problems = [];
     var code = codeInput.value.trim();
     var username = userInput.value.trim();
-    var confirm = confirmInput.value.trim();
 
     setFieldError(codeInput, !code);
     if (!code) problems.push({ input: codeInput, message: 'Enter the promo code from today’s announcement.' });
@@ -171,10 +170,13 @@
       });
     }
 
-    var badConfirm = confirm.length === 0 || confirm.toLowerCase() !== username.toLowerCase();
-    setFieldError(confirmInput, badConfirm);
-    if (badConfirm) {
-      problems.push({ input: confirmInput, message: 'The two Minecraft usernames must match exactly.' });
+    var badAgree = !agreeInput.checked;
+    setFieldError(agreeInput, badAgree);
+    if (badAgree) {
+      problems.push({
+        input: agreeInput,
+        message: 'Tick the box to confirm you are in our Discord and this is your correct Minecraft username.',
+      });
     }
 
     return problems;
@@ -200,7 +202,8 @@
       body: JSON.stringify({
         code: codeInput.value.trim(),
         username: userInput.value.trim(),
-        confirmUsername: confirmInput.value.trim(),
+        // The checkbox asserts the username is correct, so it is sent as the server's confirmation value.
+        confirmUsername: userInput.value.trim(),
       }),
     })
       .then(function (response) {
@@ -282,7 +285,7 @@
 
   form.addEventListener('submit', handleSubmit);
 
-  [codeInput, userInput, confirmInput].forEach(function (input) {
+  [codeInput, userInput, agreeInput].forEach(function (input) {
     input.addEventListener('input', function () {
       setFieldError(input, false);
     });
