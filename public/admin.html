@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff Admin — FRAMES BASEMENT REWARDS</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#05090b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="admin-body">
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <header class="site-header admin-header">
+      <div class="container header-inner">
+        <a class="brand" href="/">
+          <span class="brand-block" aria-hidden="true"></span>
+          <span class="brand-text">
+            <span class="brand-name">FRAMES BASEMENT</span>
+            <span class="brand-tag">REWARDS · ADMIN</span>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Admin navigation">
+          <a href="/">Public site</a>
+          <button class="btn btn-ghost btn-small" id="logout-button" type="button" hidden>Sign out</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <div class="container">
+        <div class="admin-flash" id="flash" hidden></div>
+
+        <!-- LOGIN -->
+        <section class="login-wrap" id="login-view">
+          <form class="card login-card" id="login-form" novalidate>
+            <h2>STAFF SIGN IN</h2>
+            <p class="login-note">
+              The admin password is checked on the server only. It is never stored in the page or sent to other
+              visitors.
+            </p>
+            <div class="field">
+              <label for="admin-password">Admin password</label>
+              <input
+                id="admin-password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Enter the admin password"
+                required
+              />
+            </div>
+            <button class="btn btn-primary btn-block" id="login-button" type="submit">SIGN IN</button>
+            <p class="form-footnote" id="login-hint"></p>
+          </form>
+        </section>
+
+        <!-- DASHBOARD -->
+        <section id="dashboard-view" hidden>
+          <div class="admin-toolbar">
+            <h1>ADMIN PANEL <span>· FRAMES BASEMENT REWARDS</span></h1>
+            <div class="row-actions">
+              <button class="btn btn-ghost btn-small" id="refresh-button" type="button">Refresh data</button>
+            </div>
+          </div>
+
+          <div class="admin-grid">
+            <div class="stat">
+              <span class="stat-label">Today (ET)</span>
+              <strong class="stat-value" id="ov-date">—</strong>
+              <span class="stat-hint" id="ov-weekday">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Today&rsquo;s code</span>
+              <strong class="stat-value mono" id="ov-code">—</strong>
+              <span class="stat-hint" id="ov-reward">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Claims today</span>
+              <strong class="stat-value" id="ov-today-claims">—</strong>
+              <span class="stat-hint" id="ov-today-remaining">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">All claims</span>
+              <strong class="stat-value" id="ov-total">—</strong>
+              <span class="stat-hint" id="ov-pending">—</span>
+            </div>
+          </div>
+
+          <div class="admin-columns admin-columns-wide">
+            <!-- promo editor -->
+            <div class="card">
+              <div class="panel-head">
+                <h2 id="promo-form-title">CREATE DAILY PROMO</h2>
+                <span class="panel-sub">America/Toronto</span>
+              </div>
+
+              <form id="promo-form" novalidate>
+                <input type="hidden" id="promo-id" value="" />
+                <div class="form-row">
+                  <div class="field">
+                    <label for="promo-date">Promo date</label>
+                    <input id="promo-date" type="date" required />
+                  </div>
+                  <div class="field">
+                    <label for="promo-code">Promo code</label>
+                    <input
+                      id="promo-code"
+                      type="text"
+                      placeholder="FRAMES-MONDAY"
+                      maxlength="32"
+                      autocapitalize="characters"
+                      spellcheck="false"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="field">
+                    <label for="promo-reward">Reward</label>
+                    <input id="promo-reward" type="text" placeholder="e.g. 1x Diamond Kit" maxlength="160" required />
+                  </div>
+                  <div class="field">
+                    <label for="promo-max">Max claims</label>
+                    <input id="promo-max" type="number" min="1" max="100000" step="1" value="50" required />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="promo-note">Internal note (optional)</label>
+                  <input id="promo-note" type="text" maxlength="200" placeholder="Visible to staff only" />
+                </div>
+                <label class="field-check" for="promo-active">
+                  <input id="promo-active" type="checkbox" checked />
+                  Accept claims for this day
+                </label>
+                <div class="row-actions">
+                  <button class="btn btn-primary btn-small" id="promo-save" type="submit">SAVE PROMO</button>
+                  <button class="btn btn-ghost btn-small" id="promo-reset" type="button">New / clear form</button>
+                  <button class="btn btn-ghost btn-small" id="promo-fill-today" type="button">Use today</button>
+                  <button class="btn btn-ghost btn-small" id="promo-fill-tomorrow" type="button">Use tomorrow</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- next 7 days -->
+            <div class="card">
+              <div class="panel-head">
+                <h2>NEXT 7 DAYS</h2>
+                <span class="panel-sub" id="upcoming-sub">prepared promos</span>
+              </div>
+              <ul class="mini-list" id="upcoming-list">
+                <li><span>Loading…</span></li>
+              </ul>
+              <div class="panel-head" style="margin-top: 20px">
+                <h2>TODAY AT A GLANCE</h2>
+              </div>
+              <ul class="mini-list" id="today-list">
+                <li><span>Loading…</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="stack" style="margin-top: 22px">
+            <!-- promos table -->
+            <div class="card">
+              <div class="panel-head">
+                <h2>DAILY PROMO SCHEDULE</h2>
+                <span class="panel-sub" id="promo-count">—</span>
+              </div>
+              <div class="toolbar-filters">
+                <select id="promo-filter" aria-label="Filter promos">
+                  <option value="all">All days</option>
+                  <option value="today">Today</option>
+                  <option value="upcoming">Future</option>
+                  <option value="past">Previous</option>
+                </select>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Code</th>
+                      <th>Reward</th>
+                      <th>Claims</th>
+                      <th>Remaining</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="promo-rows"></tbody>
+                </table>
+              </div>
+              <div class="empty" id="promo-empty" hidden>No promos for this filter yet.</div>
+            </div>
+
+            <!-- claims table -->
+            <div class="card">
+              <div class="panel-head">
+                <h2>CLAIM HISTORY</h2>
+                <span class="panel-sub" id="claims-sub">—</span>
+              </div>
+              <div class="toolbar-filters">
+                <select id="claims-filter" aria-label="Filter claims">
+                  <option value="all">All claims</option>
+                  <option value="pending">Not delivered</option>
+                  <option value="delivered">Delivered</option>
+                </select>
+                <input id="claims-search" type="search" placeholder="Search username" maxlength="16" />
+                <button class="btn btn-ghost btn-small" id="claims-search-button" type="button">Search</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Minecraft username</th>
+                      <th>Reward</th>
+                      <th>Promo date</th>
+                      <th>Claimed at (ET)</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="claim-rows"></tbody>
+                </table>
+              </div>
+              <div class="empty" id="claims-empty" hidden>No claims match this filter yet.</div>
+              <div class="pagination">
+                <span id="claims-range">—</span>
+                <span class="row-actions">
+                  <button class="btn btn-ghost btn-small" id="claims-prev" type="button">Prev</button>
+                  <button class="btn btn-ghost btn-small" id="claims-next" type="button">Next</button>
+                </span>
+              </div>
+            </div>
+
+            <!-- password -->
+            <div class="card">
+              <div class="panel-head">
+                <h2>ADMIN PASSWORD</h2>
+                <span class="panel-sub" id="password-mode">—</span>
+              </div>
+              <form id="password-form" novalidate>
+                <div class="form-row">
+                  <div class="field">
+                    <label for="current-password">Current password</label>
+                    <input id="current-password" type="password" autocomplete="current-password" required />
+                  </div>
+                  <div class="field">
+                    <label for="new-password">New password (10+ characters)</label>
+                    <input id="new-password" type="password" autocomplete="new-password" minlength="10" required />
+                  </div>
+                </div>
+                <button class="btn btn-ghost btn-small" type="submit">UPDATE PASSWORD</button>
+              </form>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="/admin.js" defer></script>
+  </body>
+</html>
