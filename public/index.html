@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FRAMES BASEMENT REWARDS — Daily Minecraft Promo Codes</title>
+    <meta
+      name="description"
+      content="Claim your daily FRAMES BASEMENT Minecraft reward. One promo code every day, one claim every 24 hours per Minecraft username."
+    />
+    <meta name="theme-color" content="#05090b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/">
+          <span class="brand-block" aria-hidden="true"></span>
+          <span class="brand-text">
+            <span class="brand-name">FRAMES BASEMENT</span>
+            <span class="brand-tag">REWARDS</span>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Main navigation">
+          <a href="#claim">Claim</a>
+          <a href="#today">Today</a>
+          <a href="#how">How it works</a>
+          <a href="#faq">FAQ</a>
+          <a class="nav-admin" href="/admin">Admin</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <!-- 1. HERO -->
+      <section class="hero">
+        <div class="container">
+          <p class="eyebrow"><span class="dot" aria-hidden="true"></span> Minecraft community · daily drops</p>
+          <h1 class="hero-title">FRAMES BASEMENT <span class="neon">REWARDS</span></h1>
+          <p class="hero-sub">
+            One promo code every day. One claim every 24 hours per Minecraft username. Rewards are delivered by the
+            FRAMES BASEMENT staff team within 3 days.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#claim">CLAIM REWARD</a>
+            <a class="btn btn-ghost" href="#how">HOW IT WORKS</a>
+          </div>
+          <ul class="hero-points">
+            <li>24-hour cooldown per username</li>
+            <li>Limited claims per code</li>
+            <li>Resets at midnight ET</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 2. TODAY'S PROMO -->
+      <section id="today" class="section">
+        <div class="container">
+          <div class="section-head">
+            <h2>Today&rsquo;s promo</h2>
+            <p class="section-note" id="today-date">Loading today&rsquo;s promo…</p>
+          </div>
+
+          <div class="stat-strip">
+            <div class="stat">
+              <span class="stat-label">Reward</span>
+              <strong class="stat-value" id="stat-reward">—</strong>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Claims left</span>
+              <strong class="stat-value" id="stat-remaining">—</strong>
+              <div class="meter" aria-hidden="true"><span id="stat-meter"></span></div>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Cooldown</span>
+              <strong class="stat-value">24 hours</strong>
+              <span class="stat-hint">per Minecraft username</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Next code drops</span>
+              <strong class="stat-value" id="stat-next">—</strong>
+              <span class="stat-hint" id="stat-next-hint">midnight America/Toronto</span>
+            </div>
+          </div>
+
+          <p class="notice" id="today-notice" hidden></p>
+        </div>
+      </section>
+
+      <!-- 3. CLAIM FORM -->
+      <section id="claim" class="section">
+        <div class="container">
+          <div class="section-head">
+            <h2>Claim your reward</h2>
+            <p class="section-note">Enter today&rsquo;s code from the Discord announcement and your Minecraft username.</p>
+          </div>
+
+          <div class="claim-layout">
+            <form class="card claim-card" id="claim-form" novalidate>
+              <div class="field">
+                <label for="code">Promo code</label>
+                <input
+                  id="code"
+                  name="code"
+                  type="text"
+                  inputmode="text"
+                  autocomplete="off"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  placeholder="e.g. FRAMES-MONDAY"
+                  maxlength="32"
+                  required
+                />
+              </div>
+
+              <div class="field">
+                <label for="username">Minecraft username</label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  placeholder="e.g. SteveBuilder"
+                  minlength="3"
+                  maxlength="16"
+                  required
+                />
+                <span class="field-hint">3–16 characters: letters, numbers or underscores.</span>
+              </div>
+
+              <div class="field">
+                <label for="confirm">Confirm Minecraft username</label>
+                <input
+                  id="confirm"
+                  name="confirmUsername"
+                  type="text"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  placeholder="Type your username again"
+                  minlength="3"
+                  maxlength="16"
+                  required
+                />
+                <span class="field-hint">The two usernames must match exactly.</span>
+              </div>
+
+              <button class="btn btn-primary btn-block" id="claim-button" type="submit">CLAIM REWARD</button>
+              <p class="form-footnote">
+                Claims are checked on our server, so refreshing the page or reopening the site cannot reset your
+                cooldown.
+              </p>
+            </form>
+
+            <div class="result-column">
+              <div class="result" id="claim-result" role="status" aria-live="polite" hidden></div>
+
+              <div class="card side-card">
+                <h3>Claim rules</h3>
+                <ul class="rule-list">
+                  <li>One claim every <strong>24 hours</strong> per Minecraft username.</li>
+                  <li>Only <strong>today&rsquo;s</strong> promo code works (America/Toronto).</li>
+                  <li>Every code has a <strong>maximum number of claims</strong>.</li>
+                  <li>Rewards are delivered in-game within <strong>3 days</strong>.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. HOW IT WORKS -->
+      <section id="how" class="section">
+        <div class="container">
+          <div class="section-head">
+            <h2>How it works</h2>
+            <p class="section-note">Four steps from code to in-game delivery.</p>
+          </div>
+          <div class="steps">
+            <article class="step">
+              <span class="step-num">01</span>
+              <h3>Grab the daily code</h3>
+              <p>A new promo code is posted every day for the FRAMES BASEMENT community.</p>
+            </article>
+            <article class="step">
+              <span class="step-num">02</span>
+              <h3>Enter your username</h3>
+              <p>Type your Minecraft username twice so we send the reward to the right player.</p>
+            </article>
+            <article class="step">
+              <span class="step-num">03</span>
+              <h3>Claim the reward</h3>
+              <p>Our server checks the code, the claim limit and your 24-hour cooldown instantly.</p>
+            </article>
+            <article class="step">
+              <span class="step-num">04</span>
+              <h3>Wait for delivery</h3>
+              <p>Staff mark your claim as delivered. Delivery may take up to 3 days.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. FAQ -->
+      <section id="faq" class="section">
+        <div class="container">
+          <div class="section-head">
+            <h2>FAQ</h2>
+            <p class="section-note">Everything members ask about daily rewards.</p>
+          </div>
+          <div class="faq">
+            <details open>
+              <summary>Why can&rsquo;t I claim twice?</summary>
+              <p>
+                Each Minecraft username can claim once every 24 hours. The cooldown is stored in our database, so
+                refreshing, reopening the site or using another browser does not reset it. When you are on cooldown the
+                claim form shows the exact time your next claim unlocks.
+              </p>
+            </details>
+            <details>
+              <summary>Does yesterday&rsquo;s code still work?</summary>
+              <p>
+                No. Only the current day&rsquo;s promo code is accepted. Codes switch automatically at midnight in the
+                America/Toronto timezone.
+              </p>
+            </details>
+            <details>
+              <summary>What happens when a code runs out of claims?</summary>
+              <p>
+                Every daily code has a maximum number of claims. Once that limit is reached the code stops accepting
+                claims and a new code drops at midnight.
+              </p>
+            </details>
+            <details>
+              <summary>How long does delivery take?</summary>
+              <p>
+                Your reward has been claimed! Delivery may take up to 3 days. Staff deliver rewards in-game and mark the
+                claim as delivered in the admin panel.
+              </p>
+            </details>
+            <details>
+              <summary>Do I need an account?</summary>
+              <p>
+                No account, no email and no payment. Just the daily promo code and your Minecraft username.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>
+          <p class="footer-brand">FRAMES BASEMENT REWARDS</p>
+          <p class="footer-note">Daily promo rewards for the FRAMES BASEMENT Minecraft community.</p>
+        </div>
+        <div class="footer-links">
+          <a href="#claim">Claim reward</a>
+          <a href="#faq">FAQ</a>
+          <a href="/admin">Staff admin</a>
+        </div>
+      </div>
+      <div class="container">
+        <p class="footer-fine">
+          Not affiliated with Mojang or Microsoft. Promo codes and rewards are provided by the FRAMES BASEMENT staff
+          team.
+        </p>
+      </div>
+    </footer>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
